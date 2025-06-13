@@ -17,6 +17,11 @@ export const metadata: Metadata = {
 	title: "ClosetBuddy - Your AI-Powered Wardrobe Assistant",
 	description:
 		"Organize your wardrobe and get AI-powered outfit suggestions based on weather, occasion, and mood.",
+	icons: {
+		icon: "/icon.svg",
+		shortcut: "/icon.svg",
+		apple: "/icon.svg",
+	},
 };
 
 export default function RootLayout({
@@ -26,6 +31,12 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en">
+			<head>
+				<link
+					rel="icon"
+					href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👔</text></svg>"
+				/>
+			</head>
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 dark:bg-gray-900 min-h-screen`}>
 				<Navigation />

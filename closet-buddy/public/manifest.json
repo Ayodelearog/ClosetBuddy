@@ -1,0 +1,21 @@
+{
+  "name": "ClosetBuddy - AI-Powered Wardrobe Assistant",
+  "short_name": "ClosetBuddy",
+  "description": "Organize your wardrobe and get AI-powered outfit suggestions based on weather, occasion, and mood.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#9333ea",
+  "icons": [
+    {
+      "src": "/icon",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-icon",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
