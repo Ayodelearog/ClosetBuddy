@@ -12,10 +12,13 @@ import {
 	MOOD_TAGS,
 } from "@/lib/utils";
 import { useWardrobe } from "@/hooks/useWardrobe";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+// import { useToast } from "@/contexts/ToastContext";
 
-export default function WardrobePage() {
+function WardrobePageContent() {
 	const { items, loading, error, toggleFavorite, deleteItem, loadItems } =
 		useWardrobe();
+	// const { success, error: showError, info } = useToast();
 	const [filteredItems, setFilteredItems] = useState(items);
 	const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 	const [showFilters, setShowFilters] = useState(false);
@@ -431,5 +434,13 @@ export default function WardrobePage() {
 				</div>
 			)}
 		</div>
+	);
+}
+
+export default function WardrobePage() {
+	return (
+		<ProtectedRoute>
+			<WardrobePageContent />
+		</ProtectedRoute>
 	);
 }

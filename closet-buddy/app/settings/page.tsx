@@ -2,8 +2,11 @@
 
 import { Palette, Cloud, Bell, Shield } from "lucide-react";
 import { PreferencesForm } from "@/components/PreferencesForm";
+import { useAuth } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
-export default function SettingsPage() {
+function SettingsPageContent() {
+	const { user } = useAuth();
 	return (
 		<div className="max-w-4xl mx-auto">
 			<div className="mb-8">
@@ -33,12 +36,20 @@ export default function SettingsPage() {
 						</div>
 					</div>
 
-					<PreferencesForm
-						userId="demo-user"
-						onSave={(preferences) => {
-							console.log("Preferences saved:", preferences);
-						}}
-					/>
+					{user ? (
+						<PreferencesForm
+							userId={user.id}
+							onSave={(preferences) => {
+								console.log("Preferences saved:", preferences);
+							}}
+						/>
+					) : (
+						<div className="text-center py-8">
+							<p className="text-gray-600 dark:text-gray-400">
+								Please sign in to manage your preferences
+							</p>
+						</div>
+					)}
 				</div>
 
 				{/* Weather Settings */}
@@ -138,5 +149,13 @@ export default function SettingsPage() {
 				</div>
 			</div>
 		</div>
+	);
+}
+
+export default function SettingsPage() {
+	return (
+		<ProtectedRoute>
+			<SettingsPageContent />
+		</ProtectedRoute>
 	);
 }

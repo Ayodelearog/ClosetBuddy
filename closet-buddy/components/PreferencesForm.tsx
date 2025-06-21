@@ -5,6 +5,7 @@ import { Save, Palette, Heart } from "lucide-react";
 import { UserPreferences, MoodTag, ClothingCategory } from "@/types";
 import { MOOD_TAGS } from "@/lib/utils";
 import { UserPreferencesService } from "@/lib/supabase";
+import { useToast } from "@/contexts/ToastContext";
 
 interface PreferencesFormProps {
 	userId: string;
@@ -15,6 +16,7 @@ export function PreferencesForm({ userId, onSave }: PreferencesFormProps) {
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const { success, error: showError, info } = useToast();
 
 	const [preferences, setPreferences] = useState({
 		favorite_colors: [] as string[],
@@ -31,14 +33,19 @@ export function PreferencesForm({ userId, onSave }: PreferencesFormProps) {
 		const loadPreferences = async () => {
 			try {
 				setLoading(true);
+				console.log("🔄 Loading preferences for user:", userId);
+
 				const { data, error } = await UserPreferencesService.get(userId);
+				console.log("📊 Load result:", { data, error });
 
 				if (error && error.code !== "PGRST116") {
 					// PGRST116 = no rows found
-					throw new Error("Failed to load preferences");
+					console.error("❌ Load error:", error);
+					throw new Error(`Failed to load preferences: ${error.message}`);
 				}
 
 				if (data) {
+					console.log("✅ Loaded preferences:", data);
 					setPreferences({
 						favorite_colors: data.favorite_colors || [],
 						style_preferences: data.style_preferences || [],
@@ -46,11 +53,23 @@ export function PreferencesForm({ userId, onSave }: PreferencesFormProps) {
 						brand_preferences: data.brand_preferences || [],
 						budget_range: data.budget_range || { min: 0, max: 1000 },
 					});
+					info(
+						"Preferences loaded",
+						"Your style preferences have been loaded successfully"
+					);
+				} else {
+					console.log("ℹ️ No preferences found, using defaults");
+					info(
+						"Welcome!",
+						"Set up your style preferences to get better outfit recommendations"
+					);
 				}
 			} catch (err) {
-				setError(
-					err instanceof Error ? err.message : "Failed to load preferences"
-				);
+				console.error("❌ Load error:", err);
+				const errorMessage =
+					err instanceof Error ? err.message : "Failed to load preferences";
+				setError(errorMessage);
+				showError("Failed to load preferences", errorMessage);
 			} finally {
 				setLoading(false);
 			}
@@ -64,6 +83,16 @@ export function PreferencesForm({ userId, onSave }: PreferencesFormProps) {
 			setSaving(true);
 			setError(null);
 
+			console.log("🔄 Saving preferences for user:", userId);
+			console.log("📝 Preferences data:", {
+				user_id: userId,
+				favorite_colors: preferences.favorite_colors,
+				style_preferences: preferences.style_preferences,
+				size_preferences: preferences.size_preferences,
+				brand_preferences: preferences.brand_preferences,
+				budget_range: preferences.budget_range,
+			});
+
 			const { data, error } = await UserPreferencesService.upsert({
 				user_id: userId,
 				favorite_colors: preferences.favorite_colors,
@@ -73,17 +102,28 @@ export function PreferencesForm({ userId, onSave }: PreferencesFormProps) {
 				budget_range: preferences.budget_range,
 			});
 
+			console.log("📊 Upsert result:", { data, error });
+
 			if (error) {
-				throw new Error("Failed to save preferences");
+				console.error("❌ Supabase error:", error);
+				throw new Error(`Failed to save preferences: ${error.message}`);
 			}
+
+			console.log("✅ Preferences saved successfully:", data);
+			success(
+				"Preferences saved!",
+				"Your style preferences have been updated successfully"
+			);
 
 			if (data && onSave) {
 				onSave(data);
 			}
 		} catch (err) {
-			setError(
-				err instanceof Error ? err.message : "Failed to save preferences"
-			);
+			console.error("❌ Save error:", err);
+			const errorMessage =
+				err instanceof Error ? err.message : "Failed to save preferences";
+			setError(errorMessage);
+			showError("Failed to save preferences", errorMessage);
 		} finally {
 			setSaving(false);
 		}
@@ -157,7 +197,7 @@ export function PreferencesForm({ userId, onSave }: PreferencesFormProps) {
 							type="text"
 							value={newColor}
 							onChange={(e) => setNewColor(e.target.value)}
-							onKeyPress={(e) => e.key === "Enter" && addColor()}
+							onKeyDown={(e) => e.key === "Enter" && addColor()}
 							placeholder="Add a color (e.g., navy blue, emerald green)"
 							className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
 						/>

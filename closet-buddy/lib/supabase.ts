@@ -192,6 +192,24 @@ export class AuthService {
 		const { error } = await supabase.auth.signOut();
 		return { error };
 	}
+
+	static async resetPassword(email: string) {
+		const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+			redirectTo: `${window.location.origin}/reset-password`,
+		});
+		return { data, error };
+	}
+
+	static async updatePassword(password: string) {
+		const { data, error } = await supabase.auth.updateUser({
+			password,
+		});
+		return { data, error };
+	}
+
+	static onAuthStateChange(callback: (event: string, session: any) => void) {
+		return supabase.auth.onAuthStateChange(callback);
+	}
 }
 
 // User Preferences helpers

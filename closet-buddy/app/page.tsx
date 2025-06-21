@@ -1,29 +1,10 @@
 import Link from "next/link";
 import { Shirt, Plus, Sparkles, Cloud, Heart } from "lucide-react";
+import { HomeContent } from "@/components/HomeContent";
 
 export default function Home() {
 	return (
 		<div className="max-w-6xl mx-auto">
-			{/* Debug: Test dark mode */}
-			<div className="mb-6 p-6 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-sm">
-				<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-					🧪 Dark Mode Test
-				</h3>
-				<div className="space-y-2">
-					<p className="text-gray-900 dark:text-gray-100">
-						This text should change color when you toggle the theme!
-					</p>
-					<div className="flex items-center gap-4">
-						<div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-						<span className="text-sm text-gray-600 dark:text-gray-400">
-							This square should change from light to dark
-						</span>
-					</div>
-					<p className="text-xs text-gray-500 dark:text-gray-500">
-						Look for the sun/moon toggle button in the navigation bar above
-					</p>
-				</div>
-			</div>
 			{/* Hero Section */}
 			<div className="text-center py-12">
 				<div className="flex justify-center mb-6">
@@ -56,6 +37,9 @@ export default function Home() {
 					</Link>
 				</div>
 			</div>
+
+			{/* Authentication-aware content */}
+			<HomeContent />
 
 			{/* Features Section */}
 			<div className="grid md:grid-cols-3 gap-8 py-12">

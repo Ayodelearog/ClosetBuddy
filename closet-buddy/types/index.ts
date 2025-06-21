@@ -151,3 +151,71 @@ export interface PaginatedResponse<T> {
   limit: number;
   has_more: boolean;
 }
+
+
+export interface AIResponse {
+  success: boolean
+  data?: any
+  error?: string
+  confidence?: number
+}
+
+export interface StyleAnalysisInput {
+  items: Array<{
+    category: string
+    colors: string[]
+    occasions: string[]
+    mood_tags: string[]
+  }>
+  userPreferences?: {
+    favoriteColors: string[]
+    stylePreferences: string[]
+  }
+}
+
+export interface StyleAnalysisOutput {
+  stylePersonality: string
+  dominantThemes: string[]
+  colorPalette: string[]
+  recommendations: string[]
+  confidence: number
+}
+
+export interface OutfitDescriptionInput {
+  items: Array<{
+    name: string
+    category: string
+    colors: string[]
+  }>
+  occasion?: string
+  season?: string
+  mood?: string
+}
+
+export interface OutfitDescriptionOutput {
+  description: string
+  styleNotes: string[]
+  occasionFit: string
+  confidence: number
+}
+
+export interface FashionAnalysisResult {
+  clothingType?: string
+  colors?: string[]
+  style?: string
+  occasion?: string
+  confidence: number
+}
+
+export interface AIConfig {
+  provider: "huggingface" | "openai" | "anthropic" | "ollama"
+  apiKey?: string
+  baseUrl?: string
+  models: {
+    styleAnalysis: string
+    textGeneration: string
+    colorAnalysis: string
+    outfitDescription: string
+    imageAnalysis?: string
+  }
+}

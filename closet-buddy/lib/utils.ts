@@ -94,7 +94,7 @@ export const imageUtils = {
 		});
 	},
 
-	// Extract dominant colors from image (simplified version)
+	// Extract dominant colors from image using simplified but accurate algorithm
 	async extractColors(file: File): Promise<string[]> {
 		return new Promise((resolve) => {
 			const canvas = document.createElement("canvas");
@@ -102,40 +102,163 @@ export const imageUtils = {
 			const img = new Image();
 
 			img.onload = () => {
-				canvas.width = img.width;
-				canvas.height = img.height;
-				ctx.drawImage(img, 0, 0);
+				// Resize for performance but keep reasonable quality
+				const maxSize = 300;
+				const scale = Math.min(maxSize / img.width, maxSize / img.height);
+				canvas.width = img.width * scale;
+				canvas.height = img.height * scale;
+
+				ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
 				const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-				const data = imageData.data;
-				const colorMap = new Map<string, number>();
+				const colors = this.extractDominantColors(imageData);
 
-				// Sample every 10th pixel for performance
-				for (let i = 0; i < data.length; i += 40) {
-					const r = data[i];
-					const g = data[i + 1];
-					const b = data[i + 2];
-
-					// Skip very light or very dark colors
-					if (r + g + b < 50 || r + g + b > 700) continue;
-
-					const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b)
-						.toString(16)
-						.slice(1)}`;
-					colorMap.set(hex, (colorMap.get(hex) || 0) + 1);
-				}
-
-				// Get top 3 colors
-				const sortedColors = Array.from(colorMap.entries())
-					.sort((a, b) => b[1] - a[1])
-					.slice(0, 3)
-					.map(([color]) => color);
-
-				resolve(sortedColors);
+				resolve(colors);
 			};
 
 			img.src = URL.createObjectURL(file);
 		});
+	},
+
+	// Simplified but more reliable color extraction
+	extractDominantColors(imageData: ImageData): string[] {
+		const data = imageData.data;
+		const colorCounts = new Map<string, number>();
+
+		// Sample pixels in a grid pattern, focusing on center area
+		const stepSize = 4; // Sample every 4th pixel
+		const centerX = imageData.width / 2;
+		const centerY = imageData.height / 2;
+
+		for (let y = 0; y < imageData.height; y += stepSize) {
+			for (let x = 0; x < imageData.width; x += stepSize) {
+				const i = (y * imageData.width + x) * 4;
+				const r = data[i];
+				const g = data[i + 1];
+				const b = data[i + 2];
+				const a = data[i + 3];
+
+				// Skip transparent pixels
+				if (a < 128) continue;
+
+				// Skip very light, very dark, or very gray colors
+				if (this.shouldSkipColor(r, g, b)) continue;
+
+				// Quantize colors to reduce noise (group similar colors)
+				const quantizedR = Math.round(r / 16) * 16;
+				const quantizedG = Math.round(g / 16) * 16;
+				const quantizedB = Math.round(b / 16) * 16;
+
+				const hex = this.rgbToHex(quantizedR, quantizedG, quantizedB);
+
+				// Weight pixels closer to center more heavily
+				const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+				const maxDistance = Math.min(imageData.width, imageData.height) / 2;
+				const weight = Math.max(
+					1,
+					Math.round(3 * (1 - distance / maxDistance))
+				);
+
+				colorCounts.set(hex, (colorCounts.get(hex) || 0) + weight);
+			}
+		}
+
+		if (colorCounts.size === 0) {
+			return ["#808080"]; // Return gray if no valid colors found
+		}
+
+		// Get the most frequent colors
+		const sortedColors = Array.from(colorCounts.entries())
+			.sort((a, b) => b[1] - a[1])
+			.map(([color]) => color);
+
+		// Filter out colors that are too similar to each other
+		const uniqueColors: string[] = [];
+		for (const color of sortedColors) {
+			const isSimilar = uniqueColors.some(
+				(existingColor) => this.colorDistance(color, existingColor) < 40
+			);
+			if (!isSimilar) {
+				uniqueColors.push(color);
+			}
+			if (uniqueColors.length >= 4) break;
+		}
+
+		return uniqueColors.slice(0, 4);
+	},
+
+	// Helper functions for color processing
+	shouldSkipColor(r: number, g: number, b: number): boolean {
+		const brightness = (r + g + b) / 3;
+		const saturation =
+			(Math.max(r, g, b) - Math.min(r, g, b)) / Math.max(r, g, b, 1);
+
+		// Don't skip important clothing colors like white, black, and grays
+		if (this.isImportantClothingColor(r, g, b)) {
+			return false;
+		}
+
+		// Skip very dark colors (but not black)
+		if (brightness < 25) return true;
+
+		// Skip very bright colors (but not white/cream)
+		if (brightness > 230) return true;
+
+		// Skip very unsaturated colors (but not grays, white, black)
+		if (saturation < 0.1) return true;
+
+		return false;
+	},
+
+	// Check if a color is an important clothing color that should never be skipped
+	isImportantClothingColor(r: number, g: number, b: number): boolean {
+		const brightness = (r + g + b) / 3;
+		const maxDiff = Math.max(r, g, b) - Math.min(r, g, b);
+
+		// White and off-white (high brightness, low color difference)
+		if (brightness > 200 && maxDiff < 30) return true;
+
+		// Black and very dark colors (low brightness, low color difference)
+		if (brightness < 40 && maxDiff < 30) return true;
+
+		// Gray tones (moderate brightness, low color difference)
+		if (brightness > 60 && brightness < 200 && maxDiff < 40) return true;
+
+		return false;
+	},
+
+	euclideanDistance(
+		a: [number, number, number],
+		b: [number, number, number]
+	): number {
+		return Math.sqrt(
+			(a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2
+		);
+	},
+
+	rgbToHex(r: number, g: number, b: number): string {
+		return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+	},
+
+	colorDistance(hex1: string, hex2: string): number {
+		const rgb1 = this.hexToRgb(hex1);
+		const rgb2 = this.hexToRgb(hex2);
+		if (!rgb1 || !rgb2) return 0;
+		return this.euclideanDistance(
+			[rgb1.r, rgb1.g, rgb1.b],
+			[rgb2.r, rgb2.g, rgb2.b]
+		);
+	},
+
+	hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+		const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+		return result
+			? {
+					r: parseInt(result[1], 16),
+					g: parseInt(result[2], 16),
+					b: parseInt(result[3], 16),
+			  }
+			: null;
 	},
 };
 

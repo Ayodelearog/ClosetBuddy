@@ -13,12 +13,16 @@ import {
 	generateUUID,
 } from "@/lib/utils";
 import { ClothingItemService, StorageService } from "@/lib/supabase";
+import { useToast } from "@/contexts/ToastContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
-export default function AddItemPage() {
+function AddItemPageContent() {
+	const { user } = useAuth();
 	const router = useRouter();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [errors, setErrors] = useState<Record<string, string>>({});
-
+	const { success, error: showError, info } = useToast();
 	const [formData, setFormData] = useState<AddClothingItemForm>({
 		name: "",
 		category: "" as ClothingCategory,
@@ -51,10 +55,19 @@ export default function AddItemPage() {
 
 	const handleColorExtraction = async (file: File) => {
 		try {
+			info("Analyzing image", "Extracting colors from your clothing item...");
 			const extractedColors = await imageUtils.extractColors(file);
 			setFormData((prev) => ({ ...prev, colors: extractedColors }));
+			success(
+				"Colors detected!",
+				`Found ${extractedColors.length} dominant colors in your image`
+			);
 		} catch (error) {
 			console.error("Color extraction failed:", error);
+			showError(
+				"Color extraction failed",
+				"Unable to detect colors from the image. You can add colors manually."
+			);
 		}
 	};
 
@@ -81,25 +94,32 @@ export default function AddItemPage() {
 		e.preventDefault();
 
 		if (!validateForm()) return;
+		if (!user) return;
 
 		setIsSubmitting(true);
 
 		try {
-			// For now, we'll use a mock user ID since we haven't implemented auth yet
-			const userId = "demo-user";
+			info("Saving item", "Uploading your clothing item to your wardrobe...");
+
 			const itemId = generateUUID();
 
 			// Upload image to Supabase Storage
+			console.log("Uploading image for user:", user.id, "itemId:", itemId);
 			const { data: uploadData, error: uploadError } =
-				await StorageService.uploadImage(formData.image!, userId, itemId);
+				await StorageService.uploadImage(formData.image!, user.id, itemId);
 
 			if (uploadError) {
-				throw new Error("Failed to upload image");
+				console.error("Image upload error:", uploadError);
+				throw new Error(
+					`Failed to upload image: ${uploadError.message || uploadError}`
+				);
 			}
 
+			console.log("Image uploaded successfully:", uploadData);
+
 			// Create clothing item record
-			const { error } = await ClothingItemService.create({
-				user_id: userId,
+			const itemData = {
+				user_id: user.id,
 				name: formData.name,
 				category: formData.category,
 				subcategory: formData.subcategory || undefined,
@@ -118,17 +138,35 @@ export default function AddItemPage() {
 				wear_count: 0,
 				favorite: false,
 				notes: formData.notes || undefined,
-			});
+			};
+
+			console.log("Creating item with data:", itemData);
+			const { data: createdItem, error } = await ClothingItemService.create(
+				itemData
+			);
 
 			if (error) {
-				throw new Error("Failed to save item");
+				console.error("Database error:", error);
+				throw new Error(`Failed to save item: ${error.message || error}`);
 			}
 
-			// Redirect to wardrobe
-			router.push("/wardrobe");
+			console.log("Item created successfully:", createdItem);
+
+			success(
+				"Item added!",
+				`"${formData.name}" has been added to your wardrobe successfully`
+			);
+
+			// Redirect to wardrobe page after a short delay to show the success message
+			setTimeout(() => {
+				router.push("/wardrobe");
+			}, 1500);
 		} catch (error) {
 			console.error("Error saving item:", error);
-			setErrors({ submit: "Failed to save item. Please try again." });
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to save item";
+			showError("Failed to save item", errorMessage);
+			setErrors({ submit: errorMessage });
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -140,16 +178,18 @@ export default function AddItemPage() {
 			<div className="flex items-center gap-4 mb-8">
 				<Link
 					href="/wardrobe"
-					className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+					className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300">
 					<ArrowLeft className="w-5 h-5" />
 				</Link>
-				<h1 className="text-3xl font-bold text-gray-900">Add New Item</h1>
+				<h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+					Add New Item
+				</h1>
 			</div>
 
 			<form onSubmit={handleSubmit} className="space-y-6">
 				{/* Image Upload */}
 				<div>
-					<label className="block text-sm font-medium text-gray-700 mb-2">
+					<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 						Photo *
 					</label>
 					<ImageUpload
@@ -171,14 +211,14 @@ export default function AddItemPage() {
 				{/* Basic Info */}
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+						<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 							Name *
 						</label>
 						<input
 							type="text"
 							value={formData.name}
 							onChange={(e) => handleInputChange("name", e.target.value)}
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+							className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
 							placeholder="e.g., Blue Cotton T-Shirt"
 						/>
 						{errors.name && (
@@ -187,7 +227,7 @@ export default function AddItemPage() {
 					</div>
 
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+						<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 							Category *
 						</label>
 						<select
@@ -198,7 +238,7 @@ export default function AddItemPage() {
 									e.target.value as ClothingCategory
 								)
 							}
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+							className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
 							<option value="">Select category</option>
 							{CLOTHING_CATEGORIES.map((category) => (
 								<option key={category.value} value={category.value}>
@@ -214,7 +254,7 @@ export default function AddItemPage() {
 
 				{/* Colors */}
 				<div>
-					<label className="block text-sm font-medium text-gray-700 mb-2">
+					<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 						Colors{" "}
 						{formData.colors.length > 0 &&
 							`(${formData.colors.length} detected)`}
@@ -223,12 +263,14 @@ export default function AddItemPage() {
 						{formData.colors.map((color, index) => (
 							<div
 								key={index}
-								className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full">
+								className="flex items-center gap-2 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">
 								<div
-									className="w-4 h-4 rounded-full border border-gray-300"
+									className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600"
 									style={{ backgroundColor: color }}
 								/>
-								<span className="text-sm">{color}</span>
+								<span className="text-sm text-gray-900 dark:text-gray-100">
+									{color}
+								</span>
 								<button
 									type="button"
 									onClick={() => {
@@ -237,14 +279,14 @@ export default function AddItemPage() {
 										);
 										handleInputChange("colors", newColors);
 									}}
-									className="text-gray-400 hover:text-red-500">
+									className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400">
 									×
 								</button>
 							</div>
 						))}
 					</div>
 					{formData.colors.length === 0 && (
-						<p className="text-sm text-gray-500 mt-1">
+						<p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
 							Colors will be automatically detected from your image
 						</p>
 					)}
@@ -273,5 +315,13 @@ export default function AddItemPage() {
 				)}
 			</form>
 		</div>
+	);
+}
+
+export default function AddItemPage() {
+	return (
+		<ProtectedRoute>
+			<AddItemPageContent />
+		</ProtectedRoute>
 	);
 }

@@ -6,6 +6,7 @@ import { Heart, Edit, Trash2, Calendar } from "lucide-react";
 import { ClothingItem } from "@/types";
 import { formatRelativeTime, cn } from "@/lib/utils";
 import { ConfirmationModal } from "./ConfirmationModal";
+import { useToast } from "@/contexts/ToastContext";
 
 interface ClothingItemCardProps {
 	item: ClothingItem;
@@ -26,6 +27,7 @@ export function ClothingItemCard({
 }: ClothingItemCardProps) {
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
+	const { success, error: showError } = useToast();
 
 	const handleDeleteClick = () => {
 		setShowDeleteModal(true);
@@ -38,10 +40,33 @@ export function ClothingItemCard({
 		try {
 			await onDelete(item);
 			setShowDeleteModal(false);
+			success(
+				"Item deleted",
+				`"${item.name}" has been removed from your wardrobe`
+			);
 		} catch (error) {
 			console.error("Error deleting item:", error);
+			showError("Failed to delete item", "Please try again");
 		} finally {
 			setIsDeleting(false);
+		}
+	};
+
+	const handleToggleFavorite = async () => {
+		if (!onToggleFavorite) return;
+
+		try {
+			await onToggleFavorite(item);
+			const message = item.favorite
+				? `"${item.name}" removed from favorites`
+				: `"${item.name}" added to favorites`;
+			success(
+				item.favorite ? "Removed from favorites" : "Added to favorites",
+				message
+			);
+		} catch (error) {
+			console.error("Error toggling favorite:", error);
+			showError("Failed to update favorite", "Please try again");
 		}
 	};
 
@@ -85,7 +110,7 @@ export function ClothingItemCard({
 					{/* Favorite button */}
 					{onToggleFavorite && (
 						<button
-							onClick={() => onToggleFavorite(item)}
+							onClick={handleToggleFavorite}
 							className={cn(
 								"absolute top-2 right-2 p-2 rounded-full transition-colors",
 								item.favorite
