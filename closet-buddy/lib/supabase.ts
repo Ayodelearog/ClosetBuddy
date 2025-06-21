@@ -207,6 +207,7 @@ export class AuthService {
 		return { data, error };
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	static onAuthStateChange(callback: (event: string, session: any) => void) {
 		return supabase.auth.onAuthStateChange(callback);
 	}

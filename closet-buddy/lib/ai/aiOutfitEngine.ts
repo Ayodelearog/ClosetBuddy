@@ -1,16 +1,13 @@
 // AI-Enhanced Outfit Suggestion Engine
-import { ClothingItem, Occasion, Season, MoodTag } from "@/types";
+import { ClothingItem, Occasion, ClothingCategory } from "@/types";
 import {
 	OutfitSuggestionEngine,
 	OutfitSuggestion,
 	SuggestionFilters,
 	AIStyleProfile,
 } from "../outfitEngine";
-import {
-	aiClient,
-	StyleAnalysisInput,
-	OutfitDescriptionInput,
-} from "./clients";
+import { AIClients } from "./clients";
+import type { StyleAnalysisInput, OutfitDescriptionInput } from "@/types";
 
 export interface AIEnhancedOutfitSuggestion extends OutfitSuggestion {
 	aiDescription?: string;
@@ -29,10 +26,24 @@ export interface AIOutfitFilters extends SuggestionFilters {
 }
 
 export class AIEnhancedOutfitEngine extends OutfitSuggestionEngine {
-	private aiAnalysisCache: Map<string, any> = new Map();
+	private aiAnalysisCache: Map<string, Record<string, unknown>> = new Map();
+	private aiClient: AIClients;
 
 	constructor(items: ClothingItem[], aiStyleProfile?: AIStyleProfile) {
 		super(items, aiStyleProfile);
+		// Initialize AI client with default config
+		this.aiClient = new AIClients({
+			provider: "huggingface",
+			apiKey: process.env.NEXT_PUBLIC_HUGGINGFACE_API_KEY || "",
+			baseUrl: "https://api-inference.huggingface.co",
+			models: {
+				styleAnalysis: "microsoft/DialoGPT-medium",
+				textGeneration: "microsoft/DialoGPT-medium",
+				colorAnalysis: "microsoft/DialoGPT-medium",
+				outfitDescription: "microsoft/DialoGPT-medium",
+				imageAnalysis: "google/vit-base-patch16-224",
+			},
+		});
 	}
 
 	// Enhanced suggestion generation with AI
@@ -40,7 +51,7 @@ export class AIEnhancedOutfitEngine extends OutfitSuggestionEngine {
 		filters: AIOutfitFilters = {}
 	): Promise<AIEnhancedOutfitSuggestion[]> {
 		// Get base suggestions from the original engine
-		const baseSuggestions = this.generateSuggestions(filters);
+		const baseSuggestions = await this.generateSuggestions(filters);
 
 		if (!filters.useAI) {
 			return baseSuggestions.map((suggestion) => ({
@@ -51,9 +62,7 @@ export class AIEnhancedOutfitEngine extends OutfitSuggestionEngine {
 
 		// Enhance each suggestion with AI
 		const enhancedSuggestions = await Promise.all(
-			baseSuggestions.map((suggestion) =>
-				this.enhanceOutfitWithAI(suggestion, filters)
-			)
+			baseSuggestions.map((suggestion) => this.enhanceOutfitWithAI(suggestion))
 		);
 
 		// Re-sort based on AI-enhanced scores
@@ -69,7 +78,7 @@ export class AIEnhancedOutfitEngine extends OutfitSuggestionEngine {
 	async generateAIEnhancedStyleProfile(): Promise<AIStyleProfile> {
 		const cacheKey = "style_profile";
 		if (this.aiAnalysisCache.has(cacheKey)) {
-			return this.aiAnalysisCache.get(cacheKey);
+			return this.aiAnalysisCache.get(cacheKey) as unknown as AIStyleProfile;
 		}
 
 		// Prepare data for AI analysis
@@ -89,7 +98,9 @@ export class AIEnhancedOutfitEngine extends OutfitSuggestionEngine {
 		};
 
 		try {
-			const aiResponse = await aiClient.analyzeStyle(styleInput);
+			const aiResponse = await this.aiClient.analyzeStyle(
+				JSON.stringify(styleInput)
+			);
 
 			if (aiResponse.success && aiResponse.data) {
 				const aiProfile = aiResponse.data;
@@ -110,7 +121,10 @@ export class AIEnhancedOutfitEngine extends OutfitSuggestionEngine {
 					occasionFrequency: this.calculateOccasionFrequency(),
 				};
 
-				this.aiAnalysisCache.set(cacheKey, enhancedProfile);
+				this.aiAnalysisCache.set(
+					cacheKey,
+					enhancedProfile as unknown as Record<string, unknown>
+				);
 				this.aiStyleProfile = enhancedProfile;
 				return enhancedProfile;
 			}
@@ -123,14 +137,16 @@ export class AIEnhancedOutfitEngine extends OutfitSuggestionEngine {
 
 		// Fallback to original method
 		const fallbackProfile = super.generateAIStyleProfile();
-		this.aiAnalysisCache.set(cacheKey, fallbackProfile);
+		this.aiAnalysisCache.set(
+			cacheKey,
+			fallbackProfile as unknown as Record<string, unknown>
+		);
 		return fallbackProfile;
 	}
 
 	// Enhance individual outfit with AI
 	private async enhanceOutfitWithAI(
-		suggestion: OutfitSuggestion,
-		filters: AIOutfitFilters
+		suggestion: OutfitSuggestion
 	): Promise<AIEnhancedOutfitSuggestion> {
 		const cacheKey = `outfit_${suggestion.items.map((i) => i.id).join("_")}`;
 
@@ -152,21 +168,30 @@ export class AIEnhancedOutfitEngine extends OutfitSuggestionEngine {
 				mood: suggestion.mood,
 			};
 
-			const aiResponse = await aiClient.generateOutfitDescription(
+			// For now, use a simple AI analysis since generateOutfitDescription doesn't exist
+			const prompt = `Describe this outfit: ${JSON.stringify(
 				descriptionInput
-			);
+			)}`;
+			const aiResponse = await this.aiClient.analyzeStyle(prompt);
 
 			if (aiResponse.success && aiResponse.data) {
 				const aiData = aiResponse.data;
 
 				const enhancements = {
-					aiDescription: aiData.description,
-					aiStyleNotes: aiData.styleNotes,
-					aiOccasionFit: aiData.occasionFit,
+					aiDescription:
+						aiData.recommendations?.[0] ||
+						this.generateFallbackDescription(suggestion),
+					aiStyleNotes: aiData.recommendations || [
+						"Classic combination",
+						"Well-coordinated colors",
+					],
+					aiOccasionFit: `Suitable for ${
+						suggestion.occasion || "various occasions"
+					}`,
 					aiPersonalityMatch: this.calculatePersonalityMatch(suggestion),
 					aiColorAnalysis: this.generateAIColorAnalysis(suggestion),
 					aiRecommendations: this.generateAIOutfitRecommendations(suggestion),
-					aiConfidence: aiData.confidence,
+					aiConfidence: aiData.confidence || 0.7,
 				};
 
 				this.aiAnalysisCache.set(cacheKey, enhancements);
@@ -196,7 +221,7 @@ export class AIEnhancedOutfitEngine extends OutfitSuggestionEngine {
 	}
 
 	// Helper methods
-	private extractPreferredCategories() {
+	private extractPreferredCategories(): ClothingCategory[] {
 		const categoryCount = this.items.reduce((acc, item) => {
 			acc[item.category] = (acc[item.category] || 0) + 1;
 			return acc;
@@ -205,13 +230,13 @@ export class AIEnhancedOutfitEngine extends OutfitSuggestionEngine {
 		return Object.entries(categoryCount)
 			.sort(([, a], [, b]) => b - a)
 			.slice(0, 3)
-			.map(([category]) => category as any);
+			.map(([category]) => category as ClothingCategory);
 	}
 
 	private determineRiskToleranceFromAI(
-		aiProfile: any
+		aiProfile: Record<string, unknown>
 	): AIStyleProfile["riskTolerance"] {
-		const themes = aiProfile.dominantThemes || [];
+		const themes = (aiProfile.dominantThemes as string[]) || [];
 		const boldThemes = themes.filter((theme: string) =>
 			["edgy", "bold", "adventurous", "experimental"].includes(
 				theme.toLowerCase()

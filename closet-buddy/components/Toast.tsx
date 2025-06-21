@@ -30,32 +30,40 @@ const toastIcons = {
 
 const toastStyles = {
 	success: {
-		container: "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800",
+		container:
+			"bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800",
 		icon: "text-green-600 dark:text-green-400",
 		title: "text-green-800 dark:text-green-200",
 		message: "text-green-700 dark:text-green-300",
-		button: "text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200",
+		button:
+			"text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200",
 	},
 	error: {
-		container: "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800",
+		container:
+			"bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800",
 		icon: "text-red-600 dark:text-red-400",
 		title: "text-red-800 dark:text-red-200",
 		message: "text-red-700 dark:text-red-300",
-		button: "text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200",
+		button:
+			"text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200",
 	},
 	warning: {
-		container: "bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800",
+		container:
+			"bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800",
 		icon: "text-yellow-600 dark:text-yellow-400",
 		title: "text-yellow-800 dark:text-yellow-200",
 		message: "text-yellow-700 dark:text-yellow-300",
-		button: "text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-200",
+		button:
+			"text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-200",
 	},
 	info: {
-		container: "bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800",
+		container:
+			"bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800",
 		icon: "text-blue-600 dark:text-blue-400",
 		title: "text-blue-800 dark:text-blue-200",
 		message: "text-blue-700 dark:text-blue-300",
-		button: "text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200",
+		button:
+			"text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200",
 	},
 };
 
@@ -79,7 +87,8 @@ export function ToastComponent({ toast, onRemove }: ToastProps) {
 			}, toast.duration);
 			return () => clearTimeout(timer);
 		}
-	}, [toast.duration]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [toast.duration]); // handleRemove is stable, safe to omit from deps
 
 	const handleRemove = () => {
 		setIsExiting(true);
@@ -98,8 +107,7 @@ export function ToastComponent({ toast, onRemove }: ToastProps) {
 				isVisible && !isExiting
 					? "translate-x-0 opacity-100"
 					: "translate-x-full opacity-0"
-			)}
-		>
+			)}>
 			<div className="p-4">
 				<div className="flex items-start">
 					<div className="flex-shrink-0">
@@ -121,8 +129,7 @@ export function ToastComponent({ toast, onRemove }: ToastProps) {
 									className={cn(
 										"text-sm font-medium underline",
 										styles.button
-									)}
-								>
+									)}>
 									{toast.action.label}
 								</button>
 							</div>
@@ -134,8 +141,7 @@ export function ToastComponent({ toast, onRemove }: ToastProps) {
 							className={cn(
 								"inline-flex text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300",
 								"focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 rounded-md"
-							)}
-						>
+							)}>
 							<span className="sr-only">Close</span>
 							<X className="h-4 w-4" />
 						</button>
@@ -155,15 +161,10 @@ export function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
 	return (
 		<div
 			aria-live="assertive"
-			className="fixed inset-0 flex items-end justify-center px-4 py-6 pointer-events-none sm:p-6 sm:items-start sm:justify-end z-50"
-		>
+			className="fixed inset-0 flex items-end justify-center px-4 py-6 pointer-events-none sm:p-6 sm:items-start sm:justify-end z-50">
 			<div className="w-full flex flex-col items-center space-y-4 sm:items-end">
 				{toasts.map((toast) => (
-					<ToastComponent
-						key={toast.id}
-						toast={toast}
-						onRemove={onRemove}
-					/>
+					<ToastComponent key={toast.id} toast={toast} onRemove={onRemove} />
 				))}
 			</div>
 		</div>

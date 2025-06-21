@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 interface TestResult {
 	success: boolean;
-	data?: any;
+	data?: Record<string, unknown>;
 	error?: string;
 	message?: string;
 }

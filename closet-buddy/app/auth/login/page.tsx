@@ -14,12 +14,12 @@ export default function LoginPage() {
 	const [showPassword, setShowPassword] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const { signIn } = useAuth();
-	const { showError, success } = useToast();
+	const { error: showError, success } = useToast();
 	const router = useRouter();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		
+
 		if (!email || !password) {
 			showError("Missing fields", "Please enter both email and password");
 			return;
@@ -28,14 +28,14 @@ export default function LoginPage() {
 		setLoading(true);
 		try {
 			const { error } = await signIn(email, password);
-			
+
 			if (error) {
 				showError("Login failed", error.message);
 			} else {
 				success("Welcome back!", "You have been successfully logged in");
 				router.push("/");
 			}
-		} catch (err) {
+		} catch {
 			showError("Login failed", "An unexpected error occurred");
 		} finally {
 			setLoading(false);
@@ -110,8 +110,7 @@ export default function LoginPage() {
 									<button
 										type="button"
 										className="absolute inset-y-0 right-0 pr-3 flex items-center"
-										onClick={() => setShowPassword(!showPassword)}
-									>
+										onClick={() => setShowPassword(!showPassword)}>
 										{showPassword ? (
 											<EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
 										) : (
@@ -126,8 +125,7 @@ export default function LoginPage() {
 						<div className="flex items-center justify-end">
 							<Link
 								href="/auth/forgot-password"
-								className="text-sm text-purple-600 hover:text-purple-500"
-							>
+								className="text-sm text-purple-600 hover:text-purple-500">
 								Forgot your password?
 							</Link>
 						</div>
@@ -137,8 +135,7 @@ export default function LoginPage() {
 							<button
 								type="submit"
 								disabled={loading}
-								className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-							>
+								className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
 								{loading ? (
 									<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
 								) : (
@@ -150,11 +147,10 @@ export default function LoginPage() {
 						{/* Sign up link */}
 						<div className="text-center">
 							<p className="text-sm text-gray-600 dark:text-gray-400">
-								Don't have an account?{" "}
+								Don&apos;t have an account?{" "}
 								<Link
 									href="/auth/signup"
-									className="font-medium text-purple-600 hover:text-purple-500"
-								>
+									className="font-medium text-purple-600 hover:text-purple-500">
 									Sign up
 								</Link>
 							</p>

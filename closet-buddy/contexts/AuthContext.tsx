@@ -33,8 +33,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		const {
 			data: { subscription },
 		} = AuthService.onAuthStateChange(async (event, session) => {
-			console.log("Auth state changed:", event, session?.user?.email);
-			setUser(session?.user ?? null);
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			console.log("Auth state changed:", event, (session as any)?.user?.email);
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			setUser((session as any)?.user ?? null);
 			setLoading(false);
 		});
 

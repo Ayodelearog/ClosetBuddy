@@ -82,7 +82,15 @@ export async function addSampleData(userId: string) {
 
 	for (const item of sampleItems) {
 		try {
-			const { data, error } = await ClothingItemService.create(item);
+			const itemWithMutableArrays = {
+				...item,
+				occasions: [...item.occasions],
+				seasons: [...item.seasons],
+				mood_tags: [...item.mood_tags],
+			};
+			const { data, error } = await ClothingItemService.create(
+				itemWithMutableArrays
+			);
 			if (error) {
 				console.error("Error creating item:", item.name, error);
 			} else {

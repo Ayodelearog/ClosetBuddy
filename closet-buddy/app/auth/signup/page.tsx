@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Mail, Lock, Shirt, User } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Shirt } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { PublicOnlyRoute } from "@/components/ProtectedRoute";
@@ -16,12 +16,12 @@ export default function SignupPage() {
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const { signUp } = useAuth();
-	const { showError, success, info } = useToast();
+	const { error: showError, info } = useToast();
 	const router = useRouter();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		
+
 		if (!email || !password || !confirmPassword) {
 			showError("Missing fields", "Please fill in all fields");
 			return;
@@ -40,17 +40,17 @@ export default function SignupPage() {
 		setLoading(true);
 		try {
 			const { error } = await signUp(email, password);
-			
+
 			if (error) {
 				showError("Signup failed", error.message);
 			} else {
 				info(
-					"Check your email", 
+					"Check your email",
 					"We've sent you a confirmation link. Please check your email to verify your account."
 				);
 				router.push("/auth/login");
 			}
-		} catch (err) {
+		} catch {
 			showError("Signup failed", "An unexpected error occurred");
 		} finally {
 			setLoading(false);
@@ -125,8 +125,7 @@ export default function SignupPage() {
 									<button
 										type="button"
 										className="absolute inset-y-0 right-0 pr-3 flex items-center"
-										onClick={() => setShowPassword(!showPassword)}
-									>
+										onClick={() => setShowPassword(!showPassword)}>
 										{showPassword ? (
 											<EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
 										) : (
@@ -159,8 +158,9 @@ export default function SignupPage() {
 									<button
 										type="button"
 										className="absolute inset-y-0 right-0 pr-3 flex items-center"
-										onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-									>
+										onClick={() =>
+											setShowConfirmPassword(!showConfirmPassword)
+										}>
 										{showConfirmPassword ? (
 											<EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
 										) : (
@@ -176,8 +176,7 @@ export default function SignupPage() {
 							<button
 								type="submit"
 								disabled={loading}
-								className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-							>
+								className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
 								{loading ? (
 									<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
 								) : (
@@ -192,8 +191,7 @@ export default function SignupPage() {
 								Already have an account?{" "}
 								<Link
 									href="/auth/login"
-									className="font-medium text-purple-600 hover:text-purple-500"
-								>
+									className="font-medium text-purple-600 hover:text-purple-500">
 									Sign in
 								</Link>
 							</p>

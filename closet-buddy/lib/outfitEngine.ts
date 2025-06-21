@@ -390,7 +390,7 @@ export class OutfitSuggestionEngine {
 		score += colorHarmony * 0.4;
 
 		// Style coherence score
-		const styleCoherence = this.calculateStyleCoherence(items, filters);
+		const styleCoherence = this.calculateStyleCoherence(items);
 		score += styleCoherence * 0.3;
 
 		// Completeness score
@@ -443,10 +443,7 @@ export class OutfitSuggestionEngine {
 	}
 
 	// Calculate style coherence
-	private calculateStyleCoherence(
-		items: ClothingItem[],
-		_filters: SuggestionFilters
-	): number {
+	private calculateStyleCoherence(items: ClothingItem[]): number {
 		const allOccasions = items.flatMap((item) => item.occasions);
 		const allMoods = items.flatMap((item) => item.mood_tags);
 

@@ -12,11 +12,11 @@ export default function ForgotPasswordPage() {
 	const [loading, setLoading] = useState(false);
 	const [sent, setSent] = useState(false);
 	const { resetPassword } = useAuth();
-	const { showError, success } = useToast();
+	const { error: showError, success } = useToast();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		
+
 		if (!email) {
 			showError("Missing email", "Please enter your email address");
 			return;
@@ -25,17 +25,17 @@ export default function ForgotPasswordPage() {
 		setLoading(true);
 		try {
 			const { error } = await resetPassword(email);
-			
+
 			if (error) {
 				showError("Reset failed", error.message);
 			} else {
 				setSent(true);
 				success(
-					"Reset link sent", 
+					"Reset link sent",
 					"Check your email for a password reset link"
 				);
 			}
-		} catch (err) {
+		} catch {
 			showError("Reset failed", "An unexpected error occurred");
 		} finally {
 			setLoading(false);
@@ -57,10 +57,9 @@ export default function ForgotPasswordPage() {
 							{sent ? "Check your email" : "Forgot your password?"}
 						</h2>
 						<p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-							{sent 
+							{sent
 								? "We've sent you a password reset link"
-								: "Enter your email address and we'll send you a reset link"
-							}
+								: "Enter your email address and we'll send you a reset link"}
 						</p>
 					</div>
 
@@ -92,8 +91,7 @@ export default function ForgotPasswordPage() {
 								<button
 									type="submit"
 									disabled={loading}
-									className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-								>
+									className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
 									{loading ? (
 										<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
 									) : (
@@ -105,8 +103,7 @@ export default function ForgotPasswordPage() {
 							<div className="text-center">
 								<Link
 									href="/auth/login"
-									className="inline-flex items-center text-sm text-purple-600 hover:text-purple-500"
-								>
+									className="inline-flex items-center text-sm text-purple-600 hover:text-purple-500">
 									<ArrowLeft className="w-4 h-4 mr-2" />
 									Back to sign in
 								</Link>
@@ -119,12 +116,12 @@ export default function ForgotPasswordPage() {
 									<Mail className="w-8 h-8 text-green-600 dark:text-green-400" />
 								</div>
 								<p className="text-gray-600 dark:text-gray-300 mb-6">
-									If an account with that email exists, you'll receive a password reset link shortly.
+									If an account with that email exists, you&apos;ll receive a
+									password reset link shortly.
 								</p>
 								<Link
 									href="/auth/login"
-									className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
-								>
+									className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200">
 									<ArrowLeft className="w-4 h-4 mr-2" />
 									Back to sign in
 								</Link>

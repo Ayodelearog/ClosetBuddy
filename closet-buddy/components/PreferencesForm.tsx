@@ -76,7 +76,8 @@ export function PreferencesForm({ userId, onSave }: PreferencesFormProps) {
 		};
 
 		loadPreferences();
-	}, [userId]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [userId]); // Toast functions are stable, safe to omit from deps
 
 	const handleSave = async () => {
 		try {

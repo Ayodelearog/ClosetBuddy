@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ClothingItemService } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -77,16 +77,14 @@ const sampleItems = [
 
 export function DebugDatabase() {
 	const { user } = useAuth();
-	const [items, setItems] = useState<any[]>([]);
+	const [items, setItems] = useState<unknown[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [adding, setAdding] = useState(false);
 
-	if (!user) {
-		return null;
-	}
+	const loadItems = useCallback(async () => {
+		if (!user) return;
 
-	const loadItems = async () => {
 		try {
 			setLoading(true);
 			console.log("DebugDatabase: Loading items for user:", user.id);
@@ -104,15 +102,23 @@ export function DebugDatabase() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [user]);
 
 	const addSampleData = async () => {
+		if (!user) return;
+
 		try {
 			setAdding(true);
 			console.log("Adding sample data...");
 
 			for (const item of sampleItems) {
-				const itemWithUserId = { ...item, user_id: user.id };
+				const itemWithUserId = {
+					...item,
+					user_id: user.id,
+					occasions: [...item.occasions],
+					seasons: [...item.seasons],
+					mood_tags: [...item.mood_tags],
+				};
 				const { data, error } = await ClothingItemService.create(
 					itemWithUserId
 				);
@@ -135,7 +141,11 @@ export function DebugDatabase() {
 
 	useEffect(() => {
 		loadItems();
-	}, []);
+	}, [loadItems]);
+
+	if (!user) {
+		return null;
+	}
 
 	return (
 		<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">

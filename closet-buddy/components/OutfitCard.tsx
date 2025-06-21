@@ -2,16 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import {
-	Heart,
-	Star,
-	Palette,
-	Users,
-	Calendar,
-	Sparkles,
-	Brain,
-	Target,
-} from "lucide-react";
+import { Heart, Palette, Users, Sparkles, Brain, Target } from "lucide-react";
 import { OutfitSuggestion } from "@/lib/outfitEngine";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/contexts/ToastContext";
@@ -46,7 +37,7 @@ export function OutfitCard({
 				"Outfit saved!",
 				`"${outfitName}" has been added to your favorites`
 			);
-		} catch (error) {
+		} catch {
 			showError("Failed to save outfit", "Please try again");
 		} finally {
 			setIsSaving(false);
@@ -167,7 +158,7 @@ export function OutfitCard({
 				{/* Items Grid */}
 				<div className="p-4">
 					<div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-						{suggestion.items.map((item, index) => (
+						{suggestion.items.map((item) => (
 							<div key={item.id} className="relative group">
 								<div className="aspect-square relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
 									<Image
@@ -190,9 +181,9 @@ export function OutfitCard({
 								{/* Colors */}
 								{item.colors.length > 0 && (
 									<div className="flex gap-1 mt-1">
-										{item.colors.slice(0, 3).map((color, colorIndex) => (
+										{item.colors.slice(0, 3).map((color) => (
 											<div
-												key={colorIndex}
+												key={color}
 												className="w-3 h-3 rounded-full border border-gray-200 dark:border-gray-600"
 												style={{ backgroundColor: color }}
 												title={color}
